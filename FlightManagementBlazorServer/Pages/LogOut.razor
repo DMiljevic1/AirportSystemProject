@@ -1,0 +1,45 @@
+﻿@page "/LogOut"
+@inject UserService _userService;
+@inject NavigationManager _navigationManager;
+
+@if(Users == null)
+ {
+      <p>Loading...</p>
+ }
+ else
+ {
+    @if(Users.FirstOrDefault(user => user.IsLogged == true) == null)
+     {
+        <h3>You are not logged in!</h3>
+        <button type="button" class="btn btn-success" @onclick="LogIn">
+            <span class="oi oi-account-login"></span>
+            Log In
+        </button>
+     }
+     else
+     {
+        <h3>Are you sure you want to log out?</h3>
+        <button type="button" class="btn btn-info" @onclick="LogOutAsync">
+            <span class="oi oi-account-logout"></span>
+            Log Out
+        </button>
+     }
+ }
+
+
+@code {
+    public List<User> Users { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        Users = await _userService.GetUsersAsync();
+    }
+    private void LogIn()
+    {
+        _navigationManager.NavigateTo("/LogIn");
+    }
+    private async Task LogOutAsync()
+    {
+        await _userService.LogOutUserAsync(Users.FirstOrDefault(user => user.IsLogged == true).Id);
+        _navigationManager.NavigateTo("/LogIn");
+    }
+}

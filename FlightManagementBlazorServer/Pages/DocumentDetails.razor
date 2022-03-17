@@ -1,0 +1,68 @@
+﻿@page "/documentDetails/{passengerId}"
+@inject NavigationManager _navigationManager;
+@inject PassengerService _passengerService;
+@inject UserService _userService;
+
+@if (Users == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @if (Users.FirstOrDefault(user => user.IsLogged == true) == null)
+    {
+
+        <h3>You don't have permission to view this page</h3>
+    }
+    else
+    {
+        <h3>Document Details</h3>
+        @if (passenger == null)
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            <table class="table table-responsive">
+                <thead>
+                    <tr>
+                        <th>Full Name</th>
+                        <th>Type Of Documemt</th>
+                        <th>Document Number</th>
+                        <th>Expire Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>@passenger.FullNameOnDocument</td>
+                        <td>@passenger.TypeOfDocument</td>
+                        <td>@passenger.NumberOfDocument</td>
+                        <td>@passenger.ExpireDate.ToString("dd.MM.yyyy")</td>
+                    </tr>
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-secondary" @onclick="Close">
+                <span class="oi oi-media-skip-backward"></span>
+                Close
+            </button>
+        }
+    }
+}
+
+
+
+@code {
+    public Passenger passenger { get; set; }
+    [Parameter]
+    public string passengerId { get; set; }
+    public List<User> Users { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        passenger = await _passengerService.GetPassengerByIdAsync(int.Parse(passengerId));
+        Users = await _userService.GetUsersAsync();
+    }
+    private void Close()
+    {
+        _navigationManager.NavigateTo("/CheckinPassengerList/" + passenger.FlightId);
+    }
+}

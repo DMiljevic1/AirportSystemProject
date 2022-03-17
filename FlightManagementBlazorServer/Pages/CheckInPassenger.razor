@@ -1,0 +1,112 @@
+﻿@page "/CheckInPassenger/{passengerId}"
+@inject NavigationManager _navigationManager;
+@inject PassengerService _passengerService;
+@inject UserService _userService;
+@using System.Text;
+
+@if (Users == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @if (Users.FirstOrDefault(user => user.IsLogged == true) == null)
+    {
+        <h3>You don't have permission to view this page</h3>
+    }
+    else
+    {
+        <h3>CheckIn Passenger</h3>
+        @if (Passenger == null)
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            <EditForm Model="@Passenger" OnValidSubmit="@CheckPassenger">
+                <PassengerForCheckinFields Passenger="@Passenger"></PassengerForCheckinFields>
+                <button type="submit" class="btn btn-success">
+                    <span class="oi oi-check"></span>
+                    CheckIn Passenger
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="Close">
+                    <span class="oi oi-media-skip-backward"></span>
+                    Close
+                </button>
+            </EditForm>
+        }
+    }
+}
+
+
+<NotificationDialog @ref="NotificationDialog" Description="@ConcatenatedValidationErrors"></NotificationDialog>
+@code {
+    [Parameter]
+    public string passengerId { get; set; }
+    public Passenger Passenger { get; set; }
+    public List<User> Users { get; set; }
+    public NotificationDialog NotificationDialog { get; set; }
+    public List<ValidationError> ValidationErrors { get; set; }
+    public String ConcatenatedValidationErrors { get; set; }
+    public DateTime Today { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        Passenger = await _passengerService.GetPassengerByIdAsync(int.Parse(passengerId));
+        Passenger.ExpireDate = DateTime.Today;
+        Today = DateTime.Today;
+        Users = await _userService.GetUsersAsync();
+    }
+    private void Close()
+    {
+        _navigationManager.NavigateTo("PassengerList/" + Passenger.FlightId);
+    }
+    private async Task CheckPassenger()
+    {
+        ValidationErrors = ValidatePassenger();
+        if (ValidationErrors.Any())
+        {
+            ConcatenatedValidationErrors = GetConcatenatedValidationErrors(ValidationErrors);
+            NotificationDialog.Show();
+        }
+        else
+        {
+            await _passengerService.UpdatePassengerAsync(Passenger);
+            await _passengerService.CheckInPassenger(int.Parse(passengerId));
+            Close();
+        }
+
+    }
+    private List<ValidationError> ValidatePassenger()
+    {
+        var validationErrors = new List<ValidationError>();
+        if (String.IsNullOrWhiteSpace(Passenger.Seat))
+            validationErrors.Add(new ValidationError { Description = "Please insert Passenger Seat!" });
+        if (String.IsNullOrWhiteSpace(Passenger.FullNameOnDocument))
+            validationErrors.Add(new ValidationError { Description = "Please insert Full Name On Document!" });
+        if (Passenger.TypeOfDocument == null)
+            validationErrors.Add(new ValidationError { Description = "Please select type of document!" });
+        if (Passenger.NumberOfDocument < 100000000)
+            validationErrors.Add(new ValidationError { Description = "Document Number must have 9 digits and can't start with 0!" });
+        if (Passenger.ExpireDate.CompareTo(Today) < 0)
+            validationErrors.Add(new ValidationError { Description = "Your document has expired! Please insert a valid expire date or enter another document!" });
+
+
+
+        return validationErrors;
+
+    }
+
+    private string GetConcatenatedValidationErrors(List<ValidationError> ValidationErrors)
+    {
+        StringBuilder message = new StringBuilder();
+        foreach (var error in ValidationErrors)
+        {
+            if (message.Length == 0)
+                message.Append(error.Description);
+            else
+                message.Append($"{Environment.NewLine} {error.Description}");
+
+        }
+        return message.ToString();
+    }
+}

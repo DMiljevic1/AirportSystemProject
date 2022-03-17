@@ -1,0 +1,66 @@
+﻿@page "/EditFlight/{FlightId}"
+@inject FlightService _flightService;
+@inject UserService _userService;
+@inject NavigationManager _navigationManager;
+
+@if (Users == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @if (Users.FirstOrDefault(user => user.IsLogged == true) == null || Users.FirstOrDefault(user => user.IsLogged == true).Role == "CheckIn")
+    {
+        <h3>You don't have permission to view this page</h3>
+    }
+    else
+    {
+        <h3>Edit Flight</h3>
+        @if (Flight == null)
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            <EditForm Model="@Flight" OnValidSubmit="@UpdateFlightAsync">
+                <FlightFields Flight="@Flight"></FlightFields>
+                <button type="submit" class="btn btn-success">
+                    <span class="oi oi-pencil"></span>
+                    Update Flight
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="Close">
+                    <span class="oi oi-media-skip-backward"></span>
+                    Close
+                </button>
+            </EditForm>
+
+        }
+    }
+}
+
+
+
+@code {
+    [Parameter]
+    public string FlightId { get; set; }
+    public List<User> Users { get; set; }
+
+    public Flight Flight { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Flight = await _flightService.GetFlightAsync(int.Parse(FlightId));
+        Users = await _userService.GetUsersAsync();
+    }
+
+    private void Close()
+    {
+        _navigationManager.NavigateTo("/");
+    }
+
+    private async Task UpdateFlightAsync()
+    {
+        await _flightService.UpdateFlight(Flight);
+        Close();
+    }
+}

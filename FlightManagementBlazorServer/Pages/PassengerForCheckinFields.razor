@@ -1,0 +1,25 @@
+﻿<div class="passengerFieldsForCheckIn">
+    <label for="seat">Seat</label>
+    <InputText id="seat" @bind-Value="@passenger.Seat" class="form-control"></InputText>
+
+    <label for="fullNameOnDocument">Full Name On Document</label>
+    <InputText id="fullNameOnDocument" @bind-Value="@passenger.FullNameOnDocument" class="form-control"></InputText>
+
+    <label for="typeOfDocument">Type Of Document</label>
+    <InputSelect id="typeOfDocument" @bind-Value="@passenger.TypeOfDocument" class="form-control">
+        <option value="">Select...</option>
+        <option value="ID card">ID card</option>
+        <option value="Passport">Passport</option>
+    </InputSelect>
+
+    <label for="documentNumber">Document Number</label>
+    <InputNumber id="documentNumber" @bind-Value="passenger.NumberOfDocument" class="form-control"></InputNumber>
+
+    <label for="expireDate">Expire Date Of Document</label>
+    <InputDate id="expireDate" @bind-Value="@passenger.ExpireDate" class="form-control"></InputDate>
+</div>
+
+@code {
+    [Parameter]
+    public Passenger passenger { get; set; }
+}

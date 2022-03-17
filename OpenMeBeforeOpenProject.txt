@@ -1,0 +1,2 @@
+First you need to opet PM and write "Update-Database". After that you need in MSSQL manually create first
+user. First user should have role admin.

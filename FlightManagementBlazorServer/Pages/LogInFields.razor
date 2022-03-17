@@ -1,0 +1,12 @@
+﻿<div class="logInFields">
+    <label for="userName">User Name</label>
+    <InputText id="userName" @bind-Value="@user.UserName" class="form-control"></InputText>
+
+    <label for="password">Password</label>
+    <InputText id="password" type="password" @bind-Value="@user.Password" class="form-control"></InputText>
+</div>
+
+@code {
+    [Parameter]
+    public User user { get; set; }
+}

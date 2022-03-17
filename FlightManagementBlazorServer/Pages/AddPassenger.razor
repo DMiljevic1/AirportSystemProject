@@ -1,0 +1,103 @@
+﻿@page "/AddPassenger/{flightId}"
+@inject NavigationManager _navigationManager;
+@inject PassengerService _passengerService;
+@inject UserService _userService;
+@using System.Text;
+
+@if (Users == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @if (Users.FirstOrDefault(user => user.IsLogged == true) == null || Users.FirstOrDefault(user => user.IsLogged == true).Role == "CheckIn")
+    {
+        <h3>You don't have permission to view this page</h3>
+    }
+    else
+    {
+        <h3>Add Passenger</h3>
+
+        <EditForm Model="@Passenger" OnValidSubmit="@AddPassengerAsync">
+            <PassengerFields Passenger="@Passenger"></PassengerFields>
+            <button type="submit" class="btn btn-success">
+                <span class="oi oi-pencil"></span>
+                Add Passenger
+            </button>
+            <button type="button" class="btn btn-secondary" @onclick="Close">
+                <span class="oi oi-media-skip-backward"></span>
+                Close
+            </button>
+        </EditForm>
+    }
+}
+
+
+<NotificationDialog @ref="NotificationDialog" Description="@ConcatenatedValidationErrors"></NotificationDialog>
+
+@code {
+    public Passenger Passenger { get; set; }
+    [Parameter]
+    public string flightId { get; set; }
+    public List<User> Users { get; set; }
+    public NotificationDialog NotificationDialog { get; set; }
+    public List<ValidationError> ValidationErrors { get; set; }
+    public String ConcatenatedValidationErrors { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        Passenger = new Passenger();
+        Passenger.FlightId = int.Parse(flightId);
+        Users = await _userService.GetUsersAsync();
+    }
+    private void Close()
+    {
+        _navigationManager.NavigateTo("/PassengerList/" + flightId);
+    }
+    private async Task AddPassengerAsync()
+    {
+        ValidationErrors = ValidatePassenger();
+        if (ValidationErrors.Any())
+        {
+            ConcatenatedValidationErrors = GetConcatenatedValidationErrors(ValidationErrors);
+            NotificationDialog.Show();
+        }
+        else
+        {
+            await _passengerService.AddPassengerAsync(Passenger);
+            Close();
+        }
+    }
+    private List<ValidationError> ValidatePassenger()
+    {
+        var validationErrors = new List<ValidationError>();
+        if (String.IsNullOrWhiteSpace(Passenger.FirstName))
+            validationErrors.Add(new ValidationError { Description = "Please insert First Name!" });
+
+        if (String.IsNullOrWhiteSpace(Passenger.LastName))
+            validationErrors.Add(new ValidationError { Description = "Please insert Last Name!" });
+
+        if (Passenger.Sex == null)
+            validationErrors.Add(new ValidationError { Description = "Please select Sex!" });
+        if (Passenger.NumberOfLuggage == 0 && Passenger.LuggageWeight != 0)
+            validationErrors.Add(new ValidationError { Description = "Please enter number of luggage or put Luggage Weight on 0!" });
+        if (Passenger.LuggageWeight == 0 && Passenger.NumberOfLuggage != 0)
+            validationErrors.Add(new ValidationError { Description = "Please enter Luggage Weight or put Number of Luggage on 0!" });
+
+        return validationErrors;
+
+    }
+
+    private string GetConcatenatedValidationErrors(List<ValidationError> ValidationErrors)
+    {
+        StringBuilder message = new StringBuilder();
+        foreach (var error in ValidationErrors)
+        {
+            if (message.Length == 0)
+                message.Append(error.Description);
+            else
+                message.Append($"{Environment.NewLine} {error.Description}");
+
+        }
+        return message.ToString();
+    }
+}

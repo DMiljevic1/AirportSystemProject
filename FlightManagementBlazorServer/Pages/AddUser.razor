@@ -1,0 +1,99 @@
+﻿@page "/AddUser"
+@inject NavigationManager _navigationManager;
+@inject UserService _userService;
+@inject UserService _userService;
+@using System.Text;
+
+@if (Users == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @if (Users.FirstOrDefault(user => user.IsLogged == true) == null || Users.FirstOrDefault(user => user.IsLogged == true).Role == "CheckIn")
+    {
+        <h3>You don't have permission to view this page</h3>
+    }
+    else
+    {
+        <h3>Add User</h3>
+
+        <EditForm Model="@User" OnValidSubmit="@AddUserAsync">
+            <UserFields user="@User"></UserFields>
+            <button type="submit" class="btn btn-success">
+                <span class="oi oi-pencil"></span>
+                Add User
+            </button>
+            <button type="button" @onclick="Close" class="btn btn-secondary">
+                <span class="oi oi-media-skip-backward"></span>
+                Close
+            </button>
+        </EditForm>
+    }
+}
+
+<NotificationDialog @ref="NotificationDialog" Description="@ConcatenatedValidationErrors"></NotificationDialog>
+
+@code {
+    public List<User> Users { get; set; }
+    public User User { get; set; }
+    public NotificationDialog NotificationDialog { get; set; }
+    public List<ValidationError> ValidationErrors { get; set; }
+    public String ConcatenatedValidationErrors { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        User = new User();
+        Users = await _userService.GetUsersAsync();
+    }
+    private void Close()
+    {
+        _navigationManager.NavigateTo("/");
+    }
+    private async Task AddUserAsync()
+    {
+        ValidationErrors = ValidatePassenger();
+        if (ValidationErrors.Any())
+        {
+            ConcatenatedValidationErrors = GetConcatenatedValidationErrors(ValidationErrors);
+            NotificationDialog.Show();
+        }
+        else
+        {
+            await _userService.AddUserAsync(User);
+            Close();
+        }
+
+    }
+    private List<ValidationError> ValidatePassenger()
+    {
+        var validationErrors = new List<ValidationError>();
+        if (String.IsNullOrWhiteSpace(User.UserName))
+            validationErrors.Add(new ValidationError { Description = "Please insert Username!" });
+
+        if (String.IsNullOrWhiteSpace(User.Password))
+            validationErrors.Add(new ValidationError { Description = "Please insert Password!" });
+
+        if (User.Role == null)
+            validationErrors.Add(new ValidationError { Description = "Please select Role!" });
+
+        if (Users.FirstOrDefault(user => user.UserName == User.UserName) != null)
+            validationErrors.Add(new ValidationError { Description = "Username already exists! Please insert new Username!" });
+
+        return validationErrors;
+
+    }
+
+    private string GetConcatenatedValidationErrors(List<ValidationError> ValidationErrors)
+    {
+        StringBuilder message = new StringBuilder();
+        foreach (var error in ValidationErrors)
+        {
+            if (message.Length == 0)
+                message.Append(error.Description);
+            else
+                message.Append($"{Environment.NewLine} {error.Description}");
+
+        }
+        return message.ToString();
+    }
+}
